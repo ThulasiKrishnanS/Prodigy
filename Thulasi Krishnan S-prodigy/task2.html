@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Modern Circular Stopwatch</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 50%, #1e40af 0%, transparent 50%), 
+                        radial-gradient(circle at 80% 20%, #7c3aed 0%, transparent 50%), 
+                        radial-gradient(circle at 40% 80%, #059669 0%, transparent 50%),
+                        linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            animation: backgroundPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { 
+                filter: brightness(1) saturate(1);
+                transform: scale(1);
+            }
+            50% { 
+                filter: brightness(1.1) saturate(1.2);
+                transform: scale(1.02);
+            }
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float-particle 20s linear infinite;
+        }
+
+        @keyframes float-particle {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .stopwatch-container {
+            background: linear-gradient(145deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.05) 100%);
+            backdrop-filter: blur(25px);
+            border-radius: 32px;
+            padding: 50px;
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            animation: containerFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes containerFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-5px) rotate(0.5deg); }
+            50% { transform: translateY(-8px) rotate(0deg); }
+            75% { transform: translateY(-5px) rotate(-0.5deg); }
+        }
+
+        .stopwatch-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #10b981, #3b82f6);
+            border-radius: 34px;
+            z-index: -1;
+            opacity: 0;
+            animation: borderGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.3; }
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 40px;
+        }
+
+        .progress-ring {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+        }
+
+        .progress-background {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 12;
+        }
+
+        .progress-bar {
+            fill: none;
+            stroke: url(#progressGradient);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 0 628;
+            transition: stroke-dasharray 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
+        }
+
+        .progress-glow {
+            fill: none;
+            stroke: rgba(59, 130, 246, 0.3);
+            stroke-width: 20;
+            stroke-linecap: round;
+            stroke-dasharray: 0 628;
+            transition: stroke-dasharray 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: blur(8px);
+        }
+
+        .time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 2.8rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .milliseconds {
+            font-size: 1.4rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+            min-width: 100px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.25));
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.35));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.25));
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-pause:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.35));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.25));
+            box-shadow: 0 8px 32px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-reset:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(220, 38, 38, 0.35));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-lap {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(124, 58, 237, 0.25));
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25);
+        }
+
+        .btn-lap:hover {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(124, 58, 237, 0.35));
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.35);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn:disabled:hover {
+            transform: none !important;
+        }
+
+        .lap-times {
+            max-height: 250px;
+            overflow-y: auto;
+            background: linear-gradient(145deg, 
+                rgba(255, 255, 255, 0.05) 0%, 
+                rgba(255, 255, 255, 0.02) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .lap-times::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .lap-times::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .lap-times::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: white;
+            opacity: 0;
+            animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .lap-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .lap-number {
+            font-weight: 600;
+            color: #3b82f6;
+            font-size: 0.9rem;
+        }
+
+        .lap-time {
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            letter-spacing: 1px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .title {
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 40px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 1px;
+        }
+
+        .keyboard-hint {
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        .keyboard-hint kbd {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            margin: 0 2px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 520px) {
+            .stopwatch-container {
+                padding: 30px 25px;
+                margin: 20px;
+                border-radius: 24px;
+            }
+            
+            .circular-progress {
+                width: 240px;
+                height: 240px;
+            }
+            
+            .time-display {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                gap: 12px;
+            }
+            
+            .btn {
+                padding: 14px 24px;
+                font-size: 0.85rem;
+                min-width: 85px;
+            }
+
+            .title {
+                font-size: 1.6rem;
+                letter-spacing: 2px;
+            }
+
+            .keyboard-hint {
+                display: none;
+            }
+        }
+
+        /* Pulse animation for when timer is running */
+        .running .progress-bar {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6)); }
+            50% { filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.9)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+    
+    <div class="stopwatch-container" id="stopwatchContainer">
+        <h1 class="title">Precision Timer</h1>
+        
+        <div class="circular-progress">
+            <svg class="progress-ring" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle class="progress-background" cx="100" cy="100" r="90"/>
+                <circle class="progress-glow" cx="100" cy="100" r="90" id="progressGlow"/>
+                <circle class="progress-bar" cx="100" cy="100" r="90" id="progressCircle"/>
+            </svg>
+            <div class="time-display">
+                <div id="timeDisplay">00:00.<span class="milliseconds">00</span></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn">Start</button>
+            <button class="btn btn-pause" id="pauseBtn" disabled>Pause</button>
+            <button class="btn btn-lap" id="lapBtn" disabled>Lap</button>
+            <button class="btn btn-reset" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="keyboard-hint">
+            <kbd>Space</kbd> Start/Pause • <kbd>R</kbd> Reset • <kbd>L</kbd> Lap
+        </div>
+        
+        <div class="lap-times" id="lapTimes" style="display: none;"></div>
+    </div>
+
+    <script>
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        let lapCounter = 0;
+
+        const timeDisplay = document.getElementById('timeDisplay');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const lapBtn = document.getElementById('lapBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lapTimes = document.getElementById('lapTimes');
+        const progressCircle = document.getElementById('progressCircle');
+        const progressGlow = document.getElementById('progressGlow');
+        const stopwatchContainer = document.getElementById('stopwatchContainer');
+
+        // Create floating particles
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                document.body.appendChild(particle);
+            }
+        }
+
+        function formatTime(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const ms = Math.floor((milliseconds % 1000) / 10);
+            
+            return {
+                display: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.<span class="milliseconds">${ms.toString().padStart(2, '0')}</span>`,
+                lapDisplay: `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
+            };
+        }
+
+        function updateDisplay() {
+            const currentTime = Date.now();
+            elapsedTime = currentTime - startTime;
+            const formatted = formatTime(elapsedTime);
+            timeDisplay.innerHTML = formatted.display;
+            
+            // Update circular progress (resets every 60 seconds)
+            const progressValue = (elapsedTime % 60000) / 60000;
+            const circumference = 2 * Math.PI * 90;
+            const strokeDasharray = progressValue * circumference;
+            progressCircle.style.strokeDasharray = `${strokeDasharray} ${circumference}`;
+            progressGlow.style.strokeDasharray = `${strokeDasharray} ${circumference}`;
+        }
+
+        function start() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(updateDisplay, 10);
+                isRunning = true;
+                
+                stopwatchContainer.classList.add('running');
+                
+                startBtn.textContent = 'Resume';
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                lapBtn.disabled = false;
+                
+                // Add subtle vibration effect (if supported)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+        }
+
+        function pause() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                
+                stopwatchContainer.classList.remove('running');
+                
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                lapBtn.disabled = true;
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate([50, 50, 50]);
+                }
+            }
+        }
+
+        function reset() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            elapsedTime = 0;
+            lapCounter = 0;
+            
+            stopwatchContainer.classList.remove('running');
+            
+            timeDisplay.innerHTML = '00:00.<span class="milliseconds">00</span>';
+            progressCircle.style.strokeDasharray = '0 628';
+            progressGlow.style.strokeDasharray = '0 628';
+            
+            startBtn.textContent = 'Start';
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            lapBtn.disabled = true;
+            
+            lapTimes.innerHTML = '';
+            lapTimes.style.display = 'none';
+            
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+        }
+
+        function addLap() {
+            if (isRunning) {
+                lapCounter++;
+                const formatted = formatTime(elapsedTime);
+                
+                const lapItem = document.createElement('div');
+                lapItem.className = 'lap-item';
+                lapItem.style.animationDelay = '0.1s';
+                lapItem.innerHTML = `
+                    <span class="lap-number">Lap ${lapCounter}</span>
+                    <span class="lap-time">${formatted.lapDisplay}</span>
+                `;
+                
+                lapTimes.insertBefore(lapItem, lapTimes.firstChild);
+                lapTimes.style.display = 'block';
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(25);
+                }
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', start);
+        pauseBtn.addEventListener('click', pause);
+        resetBtn.addEventListener('click', reset);
+        lapBtn.addEventListener('click', addLap);
+
+        // Enhanced keyboard shortcuts with visual feedback
+        document.addEventListener('keydown', (e) => {
+            // Prevent default only for our specific keys
+            const ourKeys = ['Space', 'KeyR', 'KeyL'];
+            if (ourKeys.includes(e.code)) {
+                e.preventDefault();
+            }
+            
+            switch(e.code) {
+                case 'Space':
+                    if (isRunning) {
+                        pauseBtn.style.transform = 'scale(0.95)';
+                        setTimeout(() => pauseBtn.style.transform = '', 150);
+                        pause();
+                    } else {
+                        startBtn.style.transform = 'scale(0.95)';
+                        setTimeout(() => startBtn.style.transform = '', 150);
+                        start();
+                    }
+                    break;
+                case 'KeyR':
+                    resetBtn.style.transform = 'scale(0.95)';
+                    setTimeout(() => resetBtn.style.transform = '', 150);
+                    reset();
+                    break;
+                case 'KeyL':
+                    if (isRunning) {
+                        lapBtn.style.transform = 'scale(0.95)';
+                        setTimeout(() => lapBtn.style.transform = '', 150);
+                        addLap();
+                    }
+                    break;
+            }
+        });
+
+        // Initialize particles on load
+        createParticles();
+
+        // Add focus management for better accessibility
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Tab') {
+                document.body.style.outline = 'auto';
+            }
+        });
+
+        document.addEventListener('mousedown', () => {
+            document.body.style.outline = 'none';
+        });
+    </script>
+</body>
+</html>
